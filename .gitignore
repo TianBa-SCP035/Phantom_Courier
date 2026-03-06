@@ -7,6 +7,7 @@ build/Service/*
 **/config/
 **/output/
 **/logs/
+**/tests/
 
 # 基础忽略
 __pycache__/
