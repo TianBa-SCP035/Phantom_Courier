@@ -35,8 +35,8 @@ Phantom_Courier/
 │   ├── output/                  # 最终安装包输出目录
 │   │   └── Phantom_Courier_Setup.exe
 │   ├── scripts/                 # 打包脚本
-│   │   ├── build_exe.bat        # 从 src 打包 EXE 到 dist
 │   │   ├── build_gating.bat     # 打包 Gating.exe
+│   │   ├── build_service.bat    # 打包 Service.exe
 │   │   └── package.bat          # 从 dist 打包安装包
 │   └── Phantom_Courier.iss          # Inno Setup 安装脚本
 ├── src/                          # 源代码目录
@@ -46,9 +46,8 @@ Phantom_Courier/
 │   │   ├── config_loader.py      # 配置文件加载器
 │   │   ├── logger.py             # 日志记录器
 │   │   ├── service_instance.py   # 主服务逻辑
-│   │   ├── service_wrapper.py    # Windows 服务包装器
+│   │   ├── launcher.py           # Windows 服务简易安装入口
 │   │   ├── main.py               # 主入口文件
-│   │   ├── test_service.py       # 测试脚本
 │   │   ├── scanner/              # 扫描模块
 │   │   │   ├── file_filter.py    # 文件过滤器
 │   │   │   ├── file_scanner.py   # 文件扫描器
