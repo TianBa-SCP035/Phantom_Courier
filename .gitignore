@@ -1,0 +1,20 @@
+# 忽略文件夹
+build/Control/*
+build/Gating/*
+build/Service/*
+# 所有此名文件夹将被忽略
+**/data/
+**/config/
+**/output/
+**/logs/
+
+# 基础忽略
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.*
+!.gitignore
+!.gitkeep

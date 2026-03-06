@@ -1,0 +1,4 @@
+paramiko
+pysmb
+pywin32
+pyinstaller
