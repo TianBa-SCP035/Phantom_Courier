@@ -62,8 +62,9 @@ Phantom_Courier/
 │       ├── config/               # 开发环境配置文件
 │       ├── data/                 # 开发环境数据记录
 │       └── logs/                 # 开发环境日志文件
-├── tests/                        # 测试文件
-├── go语言文件扫描服务（仅参考）/      # Go 语言参考代码
+├── tests/                        # 测试文件区
+├── .gitignore                    # Git 忽略文件
+├── LICENSE                       # 项目许可证
 ├── README.md                     # 项目说明
 └── requirements.txt              # Python 依赖
 ```
