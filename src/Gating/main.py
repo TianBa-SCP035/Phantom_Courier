@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import tempfile
-import shutil
 from datetime import datetime
 
 
@@ -142,7 +141,7 @@ def save_result(folder_path: str, result: dict):
                 json.dump(records, f, indent=4, ensure_ascii=False)
             
             # 原子操作：重命名临时文件到目标文件
-            shutil.move(temp_file, record_file)
+            os.replace(temp_file, record_file)
             
             # 释放锁
             os.remove(lock_file)
