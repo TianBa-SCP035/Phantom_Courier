@@ -299,7 +299,7 @@ class ServiceInstance:
             files_info = self._filter_files(dir_path)
             uploaded_count = self._upload_files(dir_path, files_info)
         
-        if self.gating_manager.enabled:
+        if self.gating_manager.enabled and uploaded_count > 0:
             self._process_gating(dir_path, files_info)
         
         return uploaded_count
@@ -630,46 +630,7 @@ class ServiceInstance:
             dir_path: 目录路径
             files_info: 文件信息
         """
-        if not self.gating_manager.enabled:
-            return
-        
-        if not files_info:
-            return
-        
-        all_files_info = {}
-        try:
-            filenames = os.listdir(dir_path)
-            for filename in filenames:
-                file_path = os.path.join(dir_path, filename)
-                if os.path.isfile(file_path):
-                    try:
-                        file_stat = os.stat(file_path)
-                        all_files_info[file_path] = {
-                            'path': file_path,
-                            'size': file_stat.st_size,
-                            'mod_time': file_stat.st_mtime
-                        }
-                    except Exception as e:
-                        pass
-        except Exception as e:
-            return
-        
-        if not self.gating_manager.is_gating_folder(dir_path, all_files_info):
-            return
-        
-        for check_count in range(1, self.stability_checker.file_check_count + 1):
-            if self.stability_checker.check_folder_stability(dir_path):
-                self.logger.info(f"文件夹稳定，调用 Gating: {dir_path}")
-                if self.gating_manager.call_gating(dir_path):
-                    self.logger.info(f"Gating 调用成功: {dir_path}")
-                else:
-                    self.logger.error(f"Gating 调用失败: {dir_path}")
-                return
-            
-            if check_count < self.stability_checker.file_check_count:
-                time.sleep(self.stability_checker.file_check_interval)
-        
-        self.logger.info(f"文件夹不稳定，跳过 Gating: {dir_path}")
+        self.gating_manager.submit_task_async(dir_path)
     
     def _disconnect_uploaders(self):
         """

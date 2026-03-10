@@ -9,34 +9,53 @@ def main():
     """
     Gating 主函数
     """
-    if len(sys.argv) < 2:
-        print("用法: Gating.exe <文件夹路径>")
+    if len(sys.argv) < 3 or sys.argv[1] != '--sample_files':
+        print("用法: Gating.exe --sample_files \"[\\\"文件夹路径1\\\",\\\"文件夹路径2\\\"]\"")
         sys.exit(1)
-    
-    folder_path = sys.argv[1]
-    
-    if not os.path.exists(folder_path):
-        print(f"错误：文件夹不存在: {folder_path}")
-        sys.exit(1)
-    
-    if not os.path.isdir(folder_path):
-        print(f"错误：路径不是文件夹: {folder_path}")
-        sys.exit(1)
-    
-    print(f"开始处理文件夹: {folder_path}")
     
     try:
-        result = process_folder(folder_path)
-        save_result(folder_path, result)
-        print(f"处理完成: {result}")
+        folder_paths = json.loads(sys.argv[2])
     except Exception as e:
-        print(f"处理失败: {e}")
-        result = {
-            "status": "error",
-            "error": str(e)
-        }
-        save_result(folder_path, result)
+        print(f"错误：无法解析文件夹路径: {e}")
         sys.exit(1)
+    
+    if not isinstance(folder_paths, list):
+        print("错误：--sample_files 参数应该是一个 JSON 数组")
+        sys.exit(1)
+    
+    if not folder_paths:
+        print("错误：文件夹路径列表为空")
+        sys.exit(1)
+    
+    print(f"开始处理 {len(folder_paths)} 个文件夹")
+    
+    all_results = {}
+    for folder_path in folder_paths:
+        if not os.path.exists(folder_path):
+            print(f"警告：文件夹不存在，跳过: {folder_path}")
+            continue
+        
+        if not os.path.isdir(folder_path):
+            print(f"警告：路径不是文件夹，跳过: {folder_path}")
+            continue
+        
+        print(f"处理文件夹: {folder_path}")
+        
+        try:
+            result = process_folder(folder_path)
+            save_result(folder_path, result)
+            all_results[folder_path] = result
+            print(f"处理完成: {result}")
+        except Exception as e:
+            print(f"处理失败: {e}")
+            result = {
+                "status": "error",
+                "error": str(e)
+            }
+            save_result(folder_path, result)
+            all_results[folder_path] = result
+    
+    print(f"所有文件夹处理完成: {len(all_results)} 个成功")
 
 
 def process_folder(folder_path: str) -> dict:
