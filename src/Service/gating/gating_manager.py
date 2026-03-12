@@ -226,32 +226,37 @@ class GatingManager:
                 with open(lock_file, 'x') as f:
                     pass
                 
-                records = {}
-                if os.path.exists(self.record_file):
-                    with open(self.record_file, 'r', encoding='utf-8') as f:
-                        records = json.load(f)
-                
-                if folder_path in records:
-                    records[folder_path].update(result)
-                else:
-                    records[folder_path] = result
-                
-                temp_file = self.record_file + '.tmp'
-                with open(temp_file, 'w', encoding='utf-8') as f:
-                    json.dump(records, f, indent=4, ensure_ascii=False)
-                os.replace(temp_file, self.record_file)
-                
-                os.remove(lock_file)
-                return
+                try:
+                    records = {}
+                    if os.path.exists(self.record_file):
+                        with open(self.record_file, 'r', encoding='utf-8') as f:
+                            records = json.load(f)
+                    
+                    if folder_path in records:
+                        records[folder_path].update(result)
+                    else:
+                        records[folder_path] = result
+                    
+                    temp_file = self.record_file + '.tmp'
+                    with open(temp_file, 'w', encoding='utf-8') as f:
+                        json.dump(records, f, indent=4, ensure_ascii=False)
+                    os.replace(temp_file, self.record_file)
+                    
+                    return
+                finally:
+                    if os.path.exists(lock_file):
+                        try:
+                            os.remove(lock_file)
+                        except:
+                            pass
+                            
             except FileExistsError:
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay)
                 else:
                     return
             except Exception as e:
-                if os.path.exists(lock_file):
-                    try:
-                        os.remove(lock_file)
-                    except:
-                        pass
-                return
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                else:
+                    return
