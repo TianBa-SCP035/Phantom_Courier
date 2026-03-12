@@ -2,6 +2,7 @@
 build/Control/*
 build/Gating/*
 build/Service/*
+dist/bin/Gating.exe
 # 所有此名文件夹将被忽略
 **/data/
 **/config/
