@@ -475,7 +475,7 @@ class ConfigView(ctk.CTkFrame):
         self._interval_var.set(str(sc.get("interval", 1800)))
         self._recursive_var.set(sc.get("recursive", True))
         self._always_scan_var.set(sc.get("always_scan_files", False))
-        self._upload_first_var.set(sc.get("upload_on_first_run", True))
+        self._upload_first_var.set(uc.get("upload_on_first_run", True))
 
         self._folder_mode_var.set("黑名单 (排除)" if fc.get("folder_mode", "blacklist") == "blacklist" else "白名单 (仅包含)")
         self._incl_folders_var.set(", ".join(fc.get("include_folders", [])))
@@ -517,7 +517,7 @@ class ConfigView(ctk.CTkFrame):
             c["scan"]["interval"] = int(self._interval_var.get())
             c["scan"]["recursive"] = self._recursive_var.get()
             c["scan"]["always_scan_files"] = self._always_scan_var.get()
-            c["scan"]["upload_on_first_run"] = self._upload_first_var.get()
+            c["upload"]["upload_on_first_run"] = self._upload_first_var.get()
             c["filter"]["folder_mode"] = "blacklist" if "黑名单" in self._folder_mode_var.get() else "whitelist"
             c["filter"]["include_folders"] = [x.strip() for x in self._incl_folders_var.get().split(",") if x.strip()]
             c["filter"]["exclude_folders"] = [x.strip() for x in self._excl_folders_var.get().split(",") if x.strip()]
