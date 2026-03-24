@@ -2,3 +2,6 @@ paramiko
 pysmb
 pywin32
 pyinstaller
+customtkinter
+pillow
+darkdetect

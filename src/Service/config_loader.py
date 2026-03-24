@@ -33,7 +33,10 @@ class ConfigLoader:
         """
         if getattr(sys, 'frozen', False):
             exe_dir = os.path.dirname(os.path.abspath(sys.executable))
-            project_root = os.path.dirname(exe_dir)
+            if os.path.basename(exe_dir) == 'Service':
+                project_root = os.path.dirname(os.path.dirname(exe_dir))
+            else:
+                project_root = os.path.dirname(exe_dir)
         else:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             project_root = os.path.join(os.path.dirname(current_dir), 'workspace_env')
@@ -236,6 +239,8 @@ class ConfigLoader:
         """
         if getattr(sys, 'frozen', False):
             exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+            if os.path.basename(exe_dir) == 'Service':
+                return os.path.dirname(os.path.dirname(exe_dir))
             return os.path.dirname(exe_dir)
         else:
             current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -276,7 +281,10 @@ class ConfigLoader:
             可执行文件目录路径
         """
         if getattr(sys, 'frozen', False):
-            return os.path.dirname(os.path.abspath(sys.executable))
+            exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+            if os.path.basename(exe_dir) == 'Service':
+                return os.path.dirname(exe_dir)
+            return exe_dir
         else:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             return os.path.join(current_dir, '..', 'Gating')
