@@ -1,4 +1,4 @@
-# <img src="src/Control/Courier.ico" width="60" height="60" align="middle" alt="Phantom Courier"> Phantom Courier
+# <img src="src/Control/Courier.ico" width="80" height="80" align="middle" alt="Phantom Courier"> Phantom Courier
 
 Phantom_Courier 是一个文件监控和自动传输系统，用于部署到实验仪器电脑中，监控硬盘文件，找到指定类型文件，通过 SMB 协议传递给其他 Windows 电脑的共享文件夹，或通过 SSH 协议传递给其他 Linux 服务器。支持黑白名单模式的正则匹配，以及多协议多目标地址文件同步功能，同时提供图形化界面配置和监控。
 
