@@ -536,6 +536,8 @@ class ServiceInstance:
                 self.uploaded_records[file_path]['mod_time'] = file_stat.st_mtime
             
             all_success = True
+            upload_config = self.config_loader.get_upload_config()
+            preserve_structure = upload_config.get('preserve_structure', True)
             
             for dest_index, uploader in enumerate(self.uploaders):
                 if uploader is None:
@@ -545,10 +547,13 @@ class ServiceInstance:
                 try:
                     uploader.connect()
                     
-                    for root_path in self.root_paths:
-                        if file_path.startswith(root_path):
-                            relative_path = os.path.relpath(file_path, root_path)
-                            break
+                    if preserve_structure:
+                        for root_path in self.root_paths:
+                            if file_path.startswith(root_path):
+                                relative_path = os.path.relpath(file_path, root_path)
+                                break
+                        else:
+                            relative_path = os.path.basename(file_path)
                     else:
                         relative_path = os.path.basename(file_path)
                     

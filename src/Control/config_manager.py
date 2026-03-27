@@ -49,18 +49,17 @@ class ConfigManager:
         return {
             "scan": {
                 "root_paths": [],
-                "interval": 1800,
+                "interval": 600,
                 "recursive": True,
-                "always_scan_files": False,
-                "upload_on_first_run": True
+                "always_scan_files": True
             },
             "filter": {
-                "folder_mode": "blacklist",
+                "folder_mode": "whitelist",
                 "include_folders": [],
-                "exclude_folders": ["temp", "cache"],
-                "file_mode": "blacklist",
+                "exclude_folders": [],
+                "file_mode": "whitelist",
                 "include_patterns": [],
-                "exclude_patterns": ["temp_*"],
+                "exclude_patterns": [],
                 "exclude_hidden": True
             },
             "stability": {
@@ -71,6 +70,8 @@ class ConfigManager:
             "upload": {
                 "enabled": True,
                 "retry_count": 2,
+                "preserve_structure": True,
+                "upload_on_first_run": False,
                 "sftp": {
                     "host": "", "port": 22,
                     "username": "", "password": "", "target_path": ""

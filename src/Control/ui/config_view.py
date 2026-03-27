@@ -263,6 +263,11 @@ class ConfigView(ctk.CTkFrame):
                            font=app_font(13), text_color=C_TEXT, progress_color="#89B4EA")
         sw.pack(side="left", padx=(10, 30))
         
+        self._preserve_structure_var = ctk.BooleanVar()
+        sw2 = ctk.CTkSwitch(row_f, text="保持目录结构", variable=self._preserve_structure_var,
+                            font=app_font(13), text_color=C_TEXT, progress_color="#89B4EA")
+        sw2.pack(side="left", padx=(0, 30))
+        
         ctk.CTkLabel(row_f, text="失败重试次数：", font=app_font(12), text_color=C_TEXT2).pack(side="left")
         self._retry_count_var = ctk.StringVar(value="2")
         ctk.CTkEntry(row_f, textvariable=self._retry_count_var, font=app_font(13), 
@@ -486,6 +491,7 @@ class ConfigView(ctk.CTkFrame):
         self._excl_hidden_var.set(fc.get("exclude_hidden", True))
 
         self._upload_enabled_var.set(uc.get("enabled", True))
+        self._preserve_structure_var.set(uc.get("preserve_structure", True))
         self._retry_count_var.set(str(uc.get("retry_count", 2)))
         self._dest_list = list(uc.get("destinations", []))
         self._render_destinations()
@@ -526,6 +532,7 @@ class ConfigView(ctk.CTkFrame):
             c["filter"]["exclude_patterns"] = [x.strip() for x in self._excl_patterns_var.get().split(",") if x.strip()]
             c["filter"]["exclude_hidden"] = self._excl_hidden_var.get()
             c["upload"]["enabled"] = self._upload_enabled_var.get()
+            c["upload"]["preserve_structure"] = self._preserve_structure_var.get()
             c["upload"]["retry_count"] = int(self._retry_count_var.get())
             c["upload"]["destinations"] = self._dest_list
             c["gating"]["enabled"] = self._gating_enabled_var.get()

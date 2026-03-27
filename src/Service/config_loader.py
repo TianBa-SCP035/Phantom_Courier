@@ -44,7 +44,9 @@ class ConfigLoader:
         config_file = os.path.join(project_root, 'config', 'service_config.json')
         
         if not os.path.exists(config_file):
-            raise FileNotFoundError(f"配置文件不存在: {config_file}")
+            os.makedirs(os.path.dirname(config_file), exist_ok=True)
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(self._get_default_config(), f, indent=4, ensure_ascii=False)
         
         return config_file
     
@@ -70,20 +72,27 @@ class ConfigLoader:
             if key not in self.config:
                 raise ValueError(f"配置文件缺少必需的键: {key}")
     
-    def _set_default_values(self):
+    def _get_default_config(self) -> Dict[str, Any]:
         """
-        设置默认值
+        获取默认配置
+        
+        Returns:
+            默认配置字典
         """
-        defaults = {
+        return {
             'scan': {
-                'interval': 1800,
-                'recursive': True
+                'root_paths': [],
+                'interval': 600,
+                'recursive': True,
+                'always_scan_files': True
             },
             'filter': {
+                'folder_mode': 'whitelist',
                 'include_folders': [],
-                'exclude_folders': ['temp', 'cache'],
+                'exclude_folders': [],
+                'file_mode': 'whitelist',
                 'include_patterns': [],
-                'exclude_patterns': ['temp_*'],
+                'exclude_patterns': [],
                 'exclude_hidden': True
             },
             'stability': {
@@ -93,10 +102,28 @@ class ConfigLoader:
             },
             'upload': {
                 'enabled': True,
-                'retry_count': 2
+                'retry_count': 2,
+                'preserve_structure': True,
+                'upload_on_first_run': False,
+                'sftp': {
+                    'host': '',
+                    'port': 22,
+                    'username': '',
+                    'password': '',
+                    'target_path': ''
+                },
+                'smb': {
+                    'server_ip': '',
+                    'server_port': 139,
+                    'username': '',
+                    'password': '',
+                    'share_name': '',
+                    'target_path': ''
+                },
+                'destinations': []
             },
             'gating': {
-                'enabled': True,
+                'enabled': False,
                 'exe_path': 'Gating.exe',
                 'file_extension': '.fcs'
             },
@@ -111,6 +138,12 @@ class ConfigLoader:
                 'log_file': 'service.log'
             }
         }
+    
+    def _set_default_values(self):
+        """
+        设置默认值
+        """
+        defaults = self._get_default_config()
         
         for section, section_defaults in defaults.items():
             if section not in self.config:
