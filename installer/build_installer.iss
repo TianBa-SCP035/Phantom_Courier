@@ -11,6 +11,7 @@ SolidCompression=yes
 SetupIconFile=..\src\Control\Courier.ico
 UninstallDisplayIcon={app}\bin\Phantom Courier.exe
 PrivilegesRequired=admin
+Password=geese
 
 [Files]
 Source: "..\dist\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion recursesubdirs createallsubdirs
