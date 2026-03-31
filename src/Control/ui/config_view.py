@@ -295,11 +295,42 @@ class ConfigView(ctk.CTkFrame):
     # ─── Gating ───────────────────────────────────────
     def _build_gating_tab(self, p):
         p.grid_columnconfigure(1, weight=1)
-        self._gating_enabled_var = self._labeled_switch(p, "启用 Gating 自动调用", 0)
-        self._gating_exe_var     = self._labeled_entry(p, "Gating.exe 路径：", 1, default="Gating.exe")
-        self._gating_ext_var     = self._labeled_entry(p, "触发文件后缀：", 2, default=".fcs")
+        
+        # 数据库配置区域
+        hf = ctk.CTkFrame(p, fg_color="transparent")
+        hf.grid(row=0, column=0, columnspan=2, sticky="ew", padx=14, pady=(8, 8))
+        hf.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(hf, text="数据库记录配置", font=app_font(14, "bold"), text_color=C_TEXT).grid(row=0, column=0, sticky="w")
+        self._db_enabled_var = ctk.BooleanVar()
+        sw = ctk.CTkSwitch(hf, text="启用数据库记录", variable=self._db_enabled_var,
+                           font=app_font(13), text_color=C_TEXT, progress_color="#89B4EA")
+        sw.grid(row=0, column=1, sticky="e")
+        
+        self._db_host_var      = self._labeled_entry(p, "数据库地址：", 1, default="localhost")
+        self._db_port_var      = self._labeled_entry(p, "数据库端口：", 2, default="3306", width=80)
+        self._db_username_var  = self._labeled_entry(p, "数据库用户：", 3, default="root")
+        self._db_password_var  = self._labeled_entry(p, "数据库密码：", 4, default="", show="*")
+        self._db_database_var  = self._labeled_entry(p, "数据库名称：", 5, default="phantom_courier")
+        self._db_table_var     = self._labeled_entry(p, "数据表名称：", 6, default="upload_records")
+        self._db_machine_var   = self._labeled_entry(p, "机器名称：", 7, default="Machine-001")
+        
+        # 分隔线
+        ctk.CTkFrame(p, height=1, fg_color=C_BORDER).grid(row=8, column=0, columnspan=2, sticky="ew", padx=14, pady=10)
+        
+        # Gating 配置区域
+        hf2 = ctk.CTkFrame(p, fg_color="transparent")
+        hf2.grid(row=9, column=0, columnspan=2, sticky="ew", padx=14, pady=(8, 8))
+        hf2.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(hf2, text="Gating 调用配置", font=app_font(14, "bold"), text_color=C_TEXT).grid(row=0, column=0, sticky="w")
+        self._gating_enabled_var = ctk.BooleanVar()
+        sw2 = ctk.CTkSwitch(hf2, text="启用 Gating 自动调用", variable=self._gating_enabled_var,
+                            font=app_font(13), text_color=C_TEXT, progress_color="#89B4EA")
+        sw2.grid(row=0, column=1, sticky="e")
+        
+        self._gating_exe_var     = self._labeled_entry(p, "Gating.exe 路径：", 10, default="Gating.exe")
+        self._gating_ext_var     = self._labeled_entry(p, "触发文件后缀：", 11, default=".fcs")
         ctk.CTkLabel(p, text="※ 当文件夹内所有文件均为该后缀时自动触发",
-                     font=app_font(11), text_color=C_TEXT2).grid(row=3, column=1, sticky="w", padx=14, pady=(0, 8))
+                     font=app_font(11), text_color=C_TEXT2).grid(row=12, column=1, sticky="w", padx=14, pady=(0, 8))
 
     # ─── 稳定性 ───────────────────────────────────────
     def _build_stability_tab(self, p):
@@ -326,12 +357,12 @@ class ConfigView(ctk.CTkFrame):
         ctk.CTkLabel(parent, text=text, font=app_font(12), text_color=C_TEXT2,
                      width=200, anchor="e").grid(row=row, column=col, sticky="e", padx=(14, 8), pady=8)
 
-    def _labeled_entry(self, parent, label, row, default="", width=None, compact=False):
+    def _labeled_entry(self, parent, label, row, default="", width=None, compact=False, show=None):
         if not compact:
             self._label(parent, label, row)
             var = ctk.StringVar(value=default)
             kw = {"width": width} if width else {}
-            e = ctk.CTkEntry(parent, textvariable=var, font=app_font(13), height=34, corner_radius=7, **kw)
+            e = ctk.CTkEntry(parent, textvariable=var, font=app_font(13), height=34, corner_radius=7, show=show, **kw)
             e.grid(row=row, column=1, sticky="ew" if not width else "w", padx=14, pady=8)
         else:
             f = ctk.CTkFrame(parent, fg_color="transparent")
@@ -339,7 +370,7 @@ class ConfigView(ctk.CTkFrame):
             ctk.CTkLabel(f, text=label, font=app_font(12), text_color=C_TEXT2).pack(side="left", padx=(0, 4))
             var = ctk.StringVar(value=default)
             kw = {"width": width} if width else {}
-            e = ctk.CTkEntry(f, textvariable=var, font=app_font(12), height=28, corner_radius=6, **kw)
+            e = ctk.CTkEntry(f, textvariable=var, font=app_font(12), height=28, corner_radius=6, show=show, **kw)
             e.pack(side="left", padx=0)
         return var
 
@@ -500,6 +531,16 @@ class ConfigView(ctk.CTkFrame):
         self._gating_exe_var.set(gc.get("exe_path", "Gating.exe"))
         self._gating_ext_var.set(gc.get("file_extension", ".fcs"))
 
+        dbc = c.get("database", {})
+        self._db_enabled_var.set(dbc.get("enabled", False))
+        self._db_host_var.set(dbc.get("host", "localhost"))
+        self._db_port_var.set(str(dbc.get("port", 3306)))
+        self._db_username_var.set(dbc.get("username", "root"))
+        self._db_password_var.set(dbc.get("password", ""))
+        self._db_database_var.set(dbc.get("database", "phantom_courier"))
+        self._db_table_var.set(dbc.get("table_name", "upload_records"))
+        self._db_machine_var.set(dbc.get("machine_name", "Machine-001"))
+
         self._stab_count_var.set(str(stc.get("file_check_count", 3)))
         self._stab_interval_var.set(str(stc.get("file_check_interval", 1)))
         self._stab_round_var.set(str(stc.get("file_check_round", 2)))
@@ -538,6 +579,14 @@ class ConfigView(ctk.CTkFrame):
             c["gating"]["enabled"] = self._gating_enabled_var.get()
             c["gating"]["exe_path"] = self._gating_exe_var.get().strip()
             c["gating"]["file_extension"] = self._gating_ext_var.get().strip()
+            c["database"]["enabled"] = self._db_enabled_var.get()
+            c["database"]["host"] = self._db_host_var.get().strip()
+            c["database"]["port"] = int(self._db_port_var.get())
+            c["database"]["username"] = self._db_username_var.get().strip()
+            c["database"]["password"] = self._db_password_var.get()
+            c["database"]["database"] = self._db_database_var.get().strip()
+            c["database"]["table_name"] = self._db_table_var.get().strip()
+            c["database"]["machine_name"] = self._db_machine_var.get().strip()
             c["stability"]["file_check_count"] = int(self._stab_count_var.get())
             c["stability"]["file_check_interval"] = int(self._stab_interval_var.get())
             c["stability"]["file_check_round"] = int(self._stab_round_var.get())

@@ -10,6 +10,7 @@ from scanner.stability_checker import StabilityChecker
 from uploader.sftp_uploader import SFTPUploader
 from uploader.smb_uploader import SMBUploader
 from gating.gating_manager import GatingManager
+from database.data_record import DataRecorder
 
 
 class ServiceInstance:
@@ -77,6 +78,10 @@ class ServiceInstance:
             self.config_loader.get_data_dir(),
             self.config_loader.get_bin_dir(),
             gating_record_file
+        )
+        
+        self.data_recorder = DataRecorder(
+            self.config_loader.get_database_config()
         )
         
         self.running = False
@@ -216,7 +221,6 @@ class ServiceInstance:
             self.thread.join(timeout=60)
         
         self._save_records()
-        self._disconnect_uploaders()
         self.logger.info("服务已停止")
     
     def _run(self):
@@ -293,14 +297,17 @@ class ServiceInstance:
         self.logger.info(f"处理目录: {dir_path}")
         
         uploaded_count = 0
-        files_info = {}
+        upload_snapshot = {}
         
         if self.upload_enabled:
             files_info = self._filter_files(dir_path)
-            uploaded_count = self._upload_files(dir_path, files_info)
+            uploaded_count, upload_snapshot = self._upload_files(dir_path, files_info)
+        
+        if upload_snapshot:
+            self.data_recorder.save_upload_records_async(upload_snapshot)
         
         if self.gating_manager.enabled and uploaded_count > 0:
-            self._process_gating(dir_path, files_info)
+            self.gating_manager.submit_task_async(dir_path)
         
         return uploaded_count
     
@@ -366,10 +373,16 @@ class ServiceInstance:
                         target_path = dest_config.get('target_path', '')
                         ip = dest_config.get('host', '') if protocol == 'sftp' else dest_config.get('server_ip', '')
                         
-                        for root_path in self.root_paths:
-                            if file_path.startswith(root_path):
-                                relative_path = os.path.relpath(file_path, root_path)
-                                break
+                        upload_config = self.config_loader.get_upload_config()
+                        preserve_structure = upload_config.get('preserve_structure', True)
+                        
+                        if preserve_structure:
+                            for root_path in self.root_paths:
+                                if file_path.startswith(root_path):
+                                    relative_path = os.path.relpath(file_path, root_path)
+                                    break
+                            else:
+                                relative_path = os.path.basename(file_path)
                         else:
                             relative_path = os.path.basename(file_path)
                         
@@ -401,7 +414,7 @@ class ServiceInstance:
         
         return {file_path: files_info[file_path] for file_path in files_to_upload}
     
-    def _upload_files(self, dir_path: str, files_info: Dict[str, Dict]) -> int:
+    def _upload_files(self, dir_path: str, files_info: Dict[str, Dict]) -> tuple:
         """
         上传文件
         
@@ -410,18 +423,20 @@ class ServiceInstance:
             files_info: 文件信息
         
         Returns:
-            上传的文件数量
+            (上传的文件数量, 上传结果快照)
         """
         self.is_uploading = True
         
         try:
             if not files_info:
-                return 0
+                return 0, {}
             
             upload_config = self.config_loader.get_upload_config()
             upload_on_first_run = upload_config.get('upload_on_first_run', True)
             
             if self.is_first_run and not upload_on_first_run:
+                preserve_structure = upload_config.get('preserve_structure', True)
+                
                 for file_path in files_info.keys():
                     file_stat = os.stat(file_path)
                     destinations = {}
@@ -430,10 +445,13 @@ class ServiceInstance:
                         dest_config = self.upload_destinations[dest_index]
                         protocol = dest_config.get('protocol', '')
                         
-                        for root_path in self.root_paths:
-                            if file_path.startswith(root_path):
-                                relative_path = os.path.relpath(file_path, root_path)
-                                break
+                        if preserve_structure:
+                            for root_path in self.root_paths:
+                                if file_path.startswith(root_path):
+                                    relative_path = os.path.relpath(file_path, root_path)
+                                    break
+                            else:
+                                relative_path = os.path.basename(file_path)
                         else:
                             relative_path = os.path.basename(file_path)
                         
@@ -457,7 +475,7 @@ class ServiceInstance:
                     }
                 self._save_records()
                 self.logger.info(f"上传 0 个文件，{len(files_info)} 个文件已标记，失败 0 个")
-                return 0
+                return 0, {}
             
             uploaded_count = 0
             remaining_files = list(files_info.keys())
@@ -489,22 +507,22 @@ class ServiceInstance:
             failed_count = len(failed_files)
             self.logger.info(f"上传 {uploaded_count} 个文件，0 个文件已标记，失败 {failed_count} 个")
             
-            return uploaded_count
+            upload_snapshot = {}
+            for file_path in files_info.keys():
+                if file_path in self.uploaded_records:
+                    record = self.uploaded_records[file_path]
+                    destinations = record.get('destinations', {})
+                    if destinations:
+                        upload_snapshot[file_path] = {
+                            'name': os.path.basename(file_path),
+                            'size': record.get('size', 0),
+                            'mod_time': record.get('mod_time', 0),
+                            'destinations': list(destinations.values())
+                        }
+            
+            return uploaded_count, upload_snapshot
         finally:
             self.is_uploading = False
-    
-    def _get_stable_files(self, file_paths: List[str]) -> List[str]:
-        """
-        获取稳定的文件列表
-        
-        Args:
-            file_paths: 文件路径列表
-        
-        Returns:
-            稳定的文件路径列表
-        """
-        stable_results = self.stability_checker.check_files_stability(file_paths)
-        return [file_path for file_path, is_stable in stable_results.items() if is_stable]
     
     def _upload_stable_files(self, dir_path: str, stable_files: List[str]) -> set:
         """
@@ -636,19 +654,3 @@ class ServiceInstance:
             files_info: 文件信息
         """
         self.gating_manager.submit_task_async(dir_path)
-    
-    def _disconnect_uploaders(self):
-        """
-        断开上传器连接
-        """
-        if self.sftp_uploader:
-            try:
-                self.sftp_uploader.disconnect()
-            except:
-                pass
-        
-        if self.smb_uploader:
-            try:
-                self.smb_uploader.disconnect()
-            except:
-                pass

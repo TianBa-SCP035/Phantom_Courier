@@ -127,6 +127,16 @@ class ConfigLoader:
                 'exe_path': 'Gating.exe',
                 'file_extension': '.fcs'
             },
+            'database': {
+                'enabled': False,
+                'host': 'localhost',
+                'port': 3306,
+                'username': 'root',
+                'password': '',
+                'database': 'phantom_courier',
+                'table_name': 'upload_records',
+                'machine_name': 'Machine-001'
+            },
             'storage': {
                 'upload_record_file': 'uploaded.json',
                 'failed_record_file': 'failed.json',
@@ -244,6 +254,15 @@ class ConfigLoader:
             Gating 配置字典
         """
         return self.config.get('gating', {})
+    
+    def get_database_config(self) -> Dict[str, Any]:
+        """
+        获取数据库配置
+        
+        Returns:
+            数据库配置字典
+        """
+        return self.config.get('database', {})
     
     def get_storage_config(self) -> Dict[str, Any]:
         """
