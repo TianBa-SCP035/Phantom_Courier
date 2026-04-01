@@ -187,7 +187,7 @@ Service 是 Phantom Courier 的核心功能，作为 Windows 服务安装，可�
 ```
 文件上传阶段结束后，对每个文件夹：
   ↓
-1. 如果数据库记录功能已启用且有上传结果：
+1. 如果数据库记录功能已启用且有上传结果快照：
    - 异步提交数据库记录任务（在独立线程中执行）
    ↓
 2. 在数据库记录线程中：
@@ -203,7 +203,7 @@ Service 是 Phantom Courier 的核心功能，作为 Windows 服务安装，可�
    - 直接跳过记录，不影响主流程
 ```
 **数据库表结构**：
-
+```
 CREATE TABLE `upload_records` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
   `mac_address` varchar(128) NOT NULL COMMENT '机器MAC地址',
@@ -226,11 +226,12 @@ CREATE TABLE `upload_records` (
   KEY `idx_status` (`status`),
   KEY `idx_updated_at` (`updated_at`)
 ) ENGINE=InnoDB AUTO_INCREMENT=450 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文件上传状态表';
-
+```
 **关键点**：
 - 数据库记录在独立线程中异步执行，不阻塞主流程
 - 使用 INSERT ... ON DUPLICATE KEY UPDATE 实现插入或更新
 - 同一台机器、同一个本地文件、对同一个目标地址/路径，只会保留一条记录
+- 即使所有文件上传都失败，也会记录上传状态
 - 数据库关闭时直接跳过记录，不影响主流程
 
 ### Gating 附加功能
