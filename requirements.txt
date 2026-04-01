@@ -1,6 +1,7 @@
 paramiko
 pysmb
 pywin32
+pymysql
 pyinstaller
 customtkinter
 pillow

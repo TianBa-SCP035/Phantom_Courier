@@ -65,6 +65,8 @@ Phantom_Courier/
 │   │   ├── uploader/             # 上传模块
 │   │   │   ├── sftp_uploader.py  # SFTP 上传器
 │   │   │   └── smb_uploader.py   # SMB 上传器
+│   │   ├── database/             # 数据库模块
+│   │   │   └── data_record.py   # 数据库记录器
 │   │   └── gating/               # Gating 模块
 │   │       └── gating_manager.py # Gating 管理器
 │   └── workspace_env/             # 开发环境运行目录（结构与 dist 一致）
@@ -180,6 +182,56 @@ Service 是 Phantom Courier 的核心功能，作为 Windows 服务安装，可�
 - 支持 SMB（Windows 共享文件夹）
 - 两者可以同时启用，支持多个目标地址
 - 保持原文件的目录结构（如 A/123/44/ss.txt → B/123/44/ss.txt）
+
+### 数据库记录功能
+```
+文件上传阶段结束后，对每个文件夹：
+  ↓
+1. 如果数据库记录功能已启用且有上传结果：
+   - 异步提交数据库记录任务（在独立线程中执行）
+   ↓
+2. 在数据库记录线程中：
+   - 获取本轮上传结果快照（upload_snapshot）
+   - 遍历每个文件的目标明细：
+     - 检查数据库连接
+     - 执行 INSERT ... ON DUPLICATE KEY UPDATE
+       - 如果记录不存在：插入新记录
+       - 如果记录存在：更新状态和时间
+   - 每个目标写入一条记录（包含：机器信息、文件信息、目标信息、状态）
+   ↓
+3. 数据库关闭时：
+   - 直接跳过记录，不影响主流程
+```
+**数据库表结构**：
+
+CREATE TABLE `upload_records` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
+  `mac_address` varchar(128) NOT NULL COMMENT '机器MAC地址',
+  `machine_name` varchar(256) DEFAULT NULL COMMENT '机器名称',
+  `file_path` varchar(1024) NOT NULL COMMENT '文件完整路径',
+  `file_name` varchar(512) NOT NULL COMMENT '文件名',
+  `file_size` bigint NOT NULL COMMENT '文件大小',
+  `mod_time` datetime NOT NULL COMMENT '文件修改时间',
+  `protocol` varchar(128) NOT NULL COMMENT '协议',
+  `dest_addr` varchar(256) NOT NULL COMMENT '目标IP/地址',
+  `dest_path` varchar(1024) NOT NULL COMMENT '目标路径',
+  `status` varchar(64) NOT NULL COMMENT '状态',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最近更新时间',
+  `dedup_key` char(64) GENERATED ALWAYS AS (sha2(concat(_utf8mb4'mac=',coalesce(`mac_address`,_utf8mb4''),_utf8mb4'|file=',coalesce(`file_path`,_utf8mb4''),_utf8mb4'|protocol=',coalesce(`protocol`,_utf8mb4''),_utf8mb4'|addr=',coalesce(`dest_addr`,_utf8mb4''),_utf8mb4'|dest=',coalesce(`dest_path`,_utf8mb4'')),256)) STORED COMMENT '去重哈希',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_dedup_key` (`dedup_key`),
+  KEY `idx_mac_address` (`mac_address`),
+  KEY `idx_machine_name` (`machine_name`),
+  KEY `idx_file_name` (`file_name`),
+  KEY `idx_status` (`status`),
+  KEY `idx_updated_at` (`updated_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=450 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文件上传状态表';
+
+**关键点**：
+- 数据库记录在独立线程中异步执行，不阻塞主流程
+- 使用 INSERT ... ON DUPLICATE KEY UPDATE 实现插入或更新
+- 同一台机器、同一个本地文件、对同一个目标地址/路径，只会保留一条记录
+- 数据库关闭时直接跳过记录，不影响主流程
 
 ### Gating 附加功能
 ```
@@ -328,6 +380,16 @@ Service 是 Phantom Courier 的核心功能，作为 Windows 服务安装，可�
 - `exe_path` - Gating 程序路径（相对于 bin 目录）
 - `file_extension` - 文件扩展名（文件夹内所有文件必须都是此扩展名才会触发 Gating 调用）
 
+**数据库配置**：
+- `enabled` - 是否启用数据库记录功能
+- `host` - 数据库服务器地址（默认 localhost）
+- `port` - 数据库服务器端口（默认 3306）
+- `username` - 数据库登录用户名（默认 root）
+- `password` - 数据库登录密码
+- `database` - 数据库名称（默认 phantom_courier）
+- `table_name` - 数据表名称（默认 upload_records）
+- `machine_name` - 机器名称（默认 Machine-001）
+
 **存储配置**：
 - `upload_record_file` - 上传记录文件名（默认 uploaded.json）
 - `failed_record_file` - 失败记录文件名（默认 failed.json）
@@ -438,6 +500,7 @@ Gating 是独立的可执行程序，由同事负责。
 - **上传协议**：
   - SFTP：paramiko
   - SMB：pysmb
+- **数据库**：MySQL（pymysql）
 
 
 ## 注意事项
