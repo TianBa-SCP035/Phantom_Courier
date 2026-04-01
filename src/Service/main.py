@@ -215,12 +215,7 @@ def main():
     """
     主入口函数
     """
-    config_path = None
-    
-    if len(sys.argv) > 1:
-        config_path = sys.argv[1]
-    
-    service = ServiceInstance(config_path)
+    service = ServiceInstance()
     service.start()
     
     try:

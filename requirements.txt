@@ -6,3 +6,4 @@ pyinstaller
 customtkinter
 pillow
 darkdetect
+cryptography

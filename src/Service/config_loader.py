@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from typing import Dict, List, Any
+from crypto_utils import ConfigDecryptor
 
 
 class ConfigLoader:
@@ -9,27 +10,23 @@ class ConfigLoader:
     配置文件加载器
     """
     
-    def __init__(self, config_path: str = None):
+    def __init__(self):
         """
         初始化配置加载器
-        
-        Args:
-            config_path: 配置文件路径，如果为 None 则自动查找
         """
-        self.config_path = config_path
+        self.config_dir = self._find_config_dir()
+        self.dat_config_path = os.path.join(self.config_dir, 'service_config.dat')
+        self.json_config_path = os.path.join(self.config_dir, 'service_config.json')
         self.config = {}
-        
-        if config_path is None:
-            self.config_path = self._find_config_file()
         
         self.load_config()
     
-    def _find_config_file(self) -> str:
+    def _find_config_dir(self) -> str:
         """
-        查找配置文件
+        查找配置目录
         
         Returns:
-            配置文件路径
+            配置目录路径
         """
         if getattr(sys, 'frozen', False):
             exe_dir = os.path.dirname(os.path.abspath(sys.executable))
@@ -41,22 +38,29 @@ class ConfigLoader:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             project_root = os.path.join(os.path.dirname(current_dir), 'workspace_env')
         
-        config_file = os.path.join(project_root, 'config', 'service_config.json')
+        config_dir = os.path.join(project_root, 'config')
         
-        if not os.path.exists(config_file):
-            os.makedirs(os.path.dirname(config_file), exist_ok=True)
-            with open(config_file, 'w', encoding='utf-8') as f:
-                json.dump(self._get_default_config(), f, indent=4, ensure_ascii=False)
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir, exist_ok=True)
         
-        return config_file
+        return config_dir
     
     def load_config(self):
         """
         加载配置文件
         """
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                self.config = json.load(f)
+            if os.path.exists(self.dat_config_path):
+                decryptor = ConfigDecryptor()
+                self.config = decryptor.decrypt_config_from_file(self.dat_config_path)
+            elif os.path.exists(self.json_config_path):
+                with open(self.json_config_path, 'r', encoding='utf-8') as f:
+                    self.config = json.load(f)
+            else:
+                self.config = self._get_default_config()
+                os.makedirs(self.config_dir, exist_ok=True)
+                with open(self.json_config_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.config, f, indent=4, ensure_ascii=False)
         except Exception as e:
             raise ValueError(f"加载配置文件失败: {e}")
         
@@ -343,11 +347,11 @@ class ConfigLoader:
     
     def save_config(self):
         """
-        保存配置文件
+        保存配置文件（仅用于首次无配置时自动创建默认 JSON）
         """
         try:
-            os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-            with open(self.config_path, 'w', encoding='utf-8') as f:
+            os.makedirs(self.config_dir, exist_ok=True)
+            with open(self.json_config_path, 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
         except Exception as e:
             raise ValueError(f"保存配置文件失败: {e}")

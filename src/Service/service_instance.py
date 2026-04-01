@@ -18,14 +18,11 @@ class ServiceInstance:
     服务实例
     """
     
-    def __init__(self, config_path: str = None):
+    def __init__(self):
         """
         初始化服务实例
-        
-        Args:
-            config_path: 配置文件路径
         """
-        self.config_loader = ConfigLoader(config_path)
+        self.config_loader = ConfigLoader()
         
         scan_config = self.config_loader.get_scan_config()
         filter_config = self.config_loader.get_filter_config()

@@ -2,35 +2,45 @@ import json
 import os
 from typing import Dict, Any
 from env import get_project_root
+from crypto_utils import ConfigEncryptor
 
 
 class ConfigManager:
     def __init__(self):
-        self.config_path = self._find_config_file()
+        self.config_dir = self._find_config_dir()
+        self.dat_config_path = os.path.join(self.config_dir, 'service_config.dat')
+        self.json_config_path = os.path.join(self.config_dir, 'service_config.json')
         self.config = {}
+        self.encryptor = ConfigEncryptor()
         self.load_config()
 
-    def _find_config_file(self) -> str:
+    def _find_config_dir(self) -> str:
         project_root = get_project_root()
-        return os.path.join(project_root, 'config', 'service_config.json')
+        return os.path.join(project_root, 'config')
 
     def load_config(self) -> bool:
         try:
-            if not os.path.exists(self.config_path):
+            if os.path.exists(self.dat_config_path):
+                self.config = self.encryptor.decrypt_config_from_file(self.dat_config_path)
+                return True
+            elif os.path.exists(self.json_config_path):
+                with open(self.json_config_path, 'r', encoding='utf-8') as f:
+                    self.config = json.load(f)
+                return True
+            else:
                 self.config = self._get_default_config()
-                return self.save_config()
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                self.config = json.load(f)
-            return True
+                os.makedirs(self.config_dir, exist_ok=True)
+                with open(self.json_config_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.config, f, indent=4, ensure_ascii=False)
+                return True
         except Exception:
             self.config = self._get_default_config()
             return False
 
     def save_config(self) -> bool:
         try:
-            os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                json.dump(self.config, f, indent=4, ensure_ascii=False)
+            os.makedirs(self.config_dir, exist_ok=True)
+            self.encryptor.encrypt_config_to_file(self.config, self.dat_config_path)
             return True
         except Exception:
             return False
