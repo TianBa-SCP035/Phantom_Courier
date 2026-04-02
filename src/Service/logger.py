@@ -24,7 +24,7 @@ class Logger:
         
         if not self.logger.handlers:
             formatter = logging.Formatter(
-                '%(asctime)s - %(message)s',
+                '%(asctime)s - %(levelname)s - %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S'
             )
             

@@ -45,13 +45,19 @@ class FileScanner:
         results = []
         
         for root_path in self.root_paths:
-            if recursive:
-                for dirpath, dirnames, filenames in os.walk(root_path):
-                    if self._should_scan_dir(dirpath):
-                        results.append(dirpath)
-            else:
-                if self._should_scan_dir(root_path):
-                    results.append(root_path)
+            try:
+                if recursive:
+                    for dirpath, dirnames, filenames in os.walk(root_path):
+                        try:
+                            if self._should_scan_dir(dirpath):
+                                results.append(dirpath)
+                        except Exception:
+                            continue
+                else:
+                    if self._should_scan_dir(root_path):
+                        results.append(root_path)
+            except Exception:
+                continue
         
         return results
     

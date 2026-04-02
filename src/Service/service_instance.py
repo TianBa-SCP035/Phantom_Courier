@@ -254,30 +254,57 @@ class ServiceInstance:
         try:
             self.is_first_run = not os.path.exists(self.dir_record_file)
             
+            # 检查根目录是否存在，并过滤掉不存在的目录
+            valid_root_paths = []
+            for root_path in self.root_paths:
+                if not os.path.exists(root_path):
+                    self.logger.warning(f"扫描目录不存在，已跳过: {root_path}")
+                else:
+                    valid_root_paths.append(root_path)
+            
+            # 更新 file_scanner 的 root_paths 为有效的目录
+            self.file_scanner.root_paths = valid_root_paths
             dir_paths = self.file_scanner.scan(recursive=self.recursive)
             
             uploaded_count = 0
+            processed_dirs = 0
             for dir_path in dir_paths:
                 if not self.running:
                     break
                 
-                self.file_scanner.update_dir_scan_record(dir_path)
-                
-                dir_record = self.dir_records.get(dir_path, {})
-                dir_record['last_scan_time'] = time.strftime('%Y-%m-%d %H:%M:%S')
-                self.dir_records[dir_path] = dir_record
+                try:
+                    self.file_scanner.update_dir_scan_record(dir_path)
+                    dir_record = self.dir_records.get(dir_path, {})
+                    dir_record['last_scan_time'] = time.strftime('%Y-%m-%d %H:%M:%S')
+                    self.dir_records[dir_path] = dir_record
+                except Exception as e:
+                    if "系统找不到指定的文件" in str(e) or "No such file or directory" in str(e):
+                        continue
+                    else:
+                        self.logger.warning(f"更新目录记录失败，已跳过: {dir_path}, 原因: {e}")
+                    continue
             
             for dir_path in dir_paths:
                 if not self.running:
                     break
                 
-                uploaded_count += self._process_directory(dir_path)
+                try:
+                    if not os.path.exists(dir_path):
+                        continue
+                    uploaded_count += self._process_directory(dir_path)
+                    processed_dirs += 1
+                except Exception as e:
+                    if "系统找不到指定的文件" in str(e) or "No such file or directory" in str(e):
+                        continue
+                    else:
+                        self.logger.warning(f"处理目录失败，已跳过: {dir_path}, 原因: {e}")
+                    continue
             
             if not self.running:
                 return
             
             self._save_records()
-            self.logger.info(f"扫描完成，共处理 {len(dir_paths)} 个目录，上传了 {uploaded_count} 个文件")
+            self.logger.info(f"扫描完成，共处理 {processed_dirs} 个目录，上传了 {uploaded_count} 个文件")
         except Exception as e:
             self.logger.error(f"扫描失败: {e}")
     
@@ -323,6 +350,10 @@ class ServiceInstance:
         try:
             filenames = os.listdir(dir_path)
         except Exception as e:
+            if "系统找不到指定的文件" in str(e) or "No such file or directory" in str(e):
+                self.logger.warning(f"目录不存在，已跳过: {dir_path}")
+            else:
+                self.logger.warning(f"读取目录失败，已跳过: {dir_path}, 原因: {e}")
             return files_info
         
         for filename in filenames:
