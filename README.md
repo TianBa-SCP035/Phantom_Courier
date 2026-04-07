@@ -1,8 +1,7 @@
 # <img src="src/Control/Courier.ico" width="60" height="60" align="bottom" alt="Phantom Courier"> Phantom Courier
 Phantom_Courier 是一个文件监控和自动传输系统，用于部署到实验仪器电脑中，监控硬盘文件，找到指定类型文件，通过 SMB 协议传递给其他 Windows 电脑的共享文件夹，或通过 SSH 协议传递给其他 Linux 服务器。支持黑白名单模式的正则匹配，以及多协议多目标地址文件同步功能，同时提供图形化界面配置和监控。
 
-注：Gating 为附加自定义功能程序，用于根据实验需求，在文件上传完成后，自动执行特定操作。
-注意：配置参数修改密码为：“tianba“
+注：默认防误操作口令："tianba"，该口令仅用于避免误修改，不具备安全防护意义。
 
 ## 项目概述
 
@@ -10,7 +9,7 @@ Phantom_Courier 由三个独立的可执行程序组成：
 
 1. **Control** - 主控程序（图形界面）- 通过配置文件调整 Service 参数，监控服务状态
 2. **Service** - 核心服务（Windows 服务）- 文件扫描和同结构上传，支持多规则和目标地址
-3. **Gating**  - 功能程序（由同事负责）- 接受 Service 的调用，自动圈门并生成结果图和csv文件
+3. **Gating**  - 功能程序（可自行替换）- 接受 Service 的调用，自动圈门并生成结果图和csv文件
 
 ## 目录结构
 
