@@ -581,7 +581,7 @@ class ConfigView(ctk.CTkFrame):
             c["gating"]["file_extension"] = self._gating_ext_var.get().strip()
             c["database"]["enabled"] = self._db_enabled_var.get()
             c["database"]["host"] = self._db_host_var.get().strip()
-            c["database"]["port"] = int(self._db_port_var.get())
+            c["database"]["port"] = int(self._db_port_var.get().strip() or 3306)
             c["database"]["username"] = self._db_username_var.get().strip()
             c["database"]["password"] = self._db_password_var.get()
             c["database"]["database"] = self._db_database_var.get().strip()
