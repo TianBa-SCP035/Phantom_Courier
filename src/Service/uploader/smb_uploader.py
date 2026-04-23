@@ -66,8 +66,8 @@ if __name__ == "__main__":
     uploader = SMBUploader(
         server_ip="192.168.8.104",
         server_port=139,
-        username="柴梦亚",
-        password="A123456a#",
+        username="周科钢",
+        password="Bast@123456",
         share_name="生物信息中心",
         target_path="/jiangchuandi/test"
     )
