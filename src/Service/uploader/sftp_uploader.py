@@ -70,11 +70,11 @@ class SFTPUploader:
 
 if __name__ == '__main__':
     uploader = SFTPUploader(
-        host="192.168.8.34",
+        host="your-sftp-host",
         port=22,
-        username="zhoukegang",
-        password="123456",
-        target_path="/SASdata/personal/zhoukegang/gatetest/"
+        username="your-username",
+        password="your-password",
+        target_path="/your/target/path/"
     )
 
     test_file = r"D:\Code_Base\Phantom_Courier\tests\test1.csv"

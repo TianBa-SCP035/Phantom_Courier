@@ -64,12 +64,12 @@ class SMBUploader:
 
 if __name__ == "__main__":
     uploader = SMBUploader(
-        server_ip="192.168.8.104",
+        server_ip="your-smb-server",
         server_port=139,
-        username="周科钢",
-        password="Bast@123456",
-        share_name="生物信息中心",
-        target_path="/jiangchuandi/test"
+        username="your-username",
+        password="your-password",
+        share_name="your-share-name",
+        target_path="/your/target/path"
     )
 
     test_file = r"D:\Code_Base\Phantom_Courier\tests\test1.csv"
