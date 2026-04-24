@@ -346,6 +346,7 @@ CREATE TABLE `upload_records` (
   - `true` - 保持相对目录结构
   - `false` - 扁平化保存，直接存文件到指定位置
 - `retry_count` - 上传失败后的重试次数（0 表示不重试）
+- `file_upload_interval` - 同一文件夹内文件上传间隔，单位秒；默认 `0` 表示不等待
 - `upload_on_first_run` - 首次扫描时是否上传已有文件（默认 true）
 - `sftp` - SFTP 默认配置（用于填充 destinations 中的空参数）
   - `host` - SFTP 服务器地址

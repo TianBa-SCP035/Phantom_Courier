@@ -272,6 +272,10 @@ class ConfigView(ctk.CTkFrame):
         self._retry_count_var = ctk.StringVar(value="2")
         ctk.CTkEntry(row_f, textvariable=self._retry_count_var, font=app_font(13), 
                      height=30, width=60, corner_radius=7).pack(side="left", padx=4)
+        self._file_upload_interval_var = ctk.StringVar(value="0")
+        ctk.CTkLabel(row_f, text="上传间隔(秒)：", font=app_font(12), text_color=C_TEXT2).pack(side="left", padx=(12, 0))
+        ctk.CTkEntry(row_f, textvariable=self._file_upload_interval_var, font=app_font(13),
+                     height=30, width=80, corner_radius=7).pack(side="left", padx=4)
 
         # 目标列表标题
         hf = ctk.CTkFrame(p, fg_color="transparent")
@@ -524,6 +528,7 @@ class ConfigView(ctk.CTkFrame):
         self._upload_enabled_var.set(uc.get("enabled", True))
         self._preserve_structure_var.set(uc.get("preserve_structure", True))
         self._retry_count_var.set(str(uc.get("retry_count", 2)))
+        self._file_upload_interval_var.set(str(uc.get("file_upload_interval", 0)))
         self._dest_list = list(uc.get("destinations", []))
         self._render_destinations()
 
@@ -575,6 +580,7 @@ class ConfigView(ctk.CTkFrame):
             c["upload"]["enabled"] = self._upload_enabled_var.get()
             c["upload"]["preserve_structure"] = self._preserve_structure_var.get()
             c["upload"]["retry_count"] = int(self._retry_count_var.get())
+            c["upload"]["file_upload_interval"] = float(self._file_upload_interval_var.get() or 0)
             c["upload"]["destinations"] = self._dest_list
             c["gating"]["enabled"] = self._gating_enabled_var.get()
             c["gating"]["exe_path"] = self._gating_exe_var.get().strip()

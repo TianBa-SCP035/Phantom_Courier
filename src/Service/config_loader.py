@@ -107,6 +107,7 @@ class ConfigLoader:
             'upload': {
                 'enabled': True,
                 'retry_count': 2,
+                'file_upload_interval': 0,
                 'preserve_structure': True,
                 'upload_on_first_run': False,
                 'sftp': {

@@ -567,9 +567,16 @@ class ServiceInstance:
             return set()
         
         uploaded_files = set()
+        upload_config = self.config_loader.get_upload_config()
+        preserve_structure = upload_config.get('preserve_structure', True)
+        file_upload_interval = max(0, float(upload_config.get('file_upload_interval', 0) or 0))
+        file_results = {file_path: True for file_path in stable_files}
+        file_stats = {}
+        relative_paths = {}
         
         for file_path in stable_files:
             file_stat = os.stat(file_path)
+            file_stats[file_path] = file_stat
             
             if file_path not in self.uploaded_records:
                 self.uploaded_records[file_path] = {
@@ -581,67 +588,64 @@ class ServiceInstance:
                 self.uploaded_records[file_path]['size'] = file_stat.st_size
                 self.uploaded_records[file_path]['mod_time'] = file_stat.st_mtime
             
-            all_success = True
-            upload_config = self.config_loader.get_upload_config()
-            preserve_structure = upload_config.get('preserve_structure', True)
+            if preserve_structure:
+                for root_path in self.root_paths:
+                    if file_path.startswith(root_path):
+                        relative_path = os.path.relpath(file_path, root_path)
+                        break
+                else:
+                    relative_path = os.path.basename(file_path)
+            else:
+                relative_path = os.path.basename(file_path)
             
-            for dest_index, uploader in enumerate(self.uploaders):
-                if uploader is None:
-                    all_success = False
-                    continue
+            relative_paths[file_path] = relative_path
+        
+        for dest_index, uploader in enumerate(self.uploaders):
+            if uploader is None:
+                for file_path in stable_files:
+                    file_results[file_path] = False
+                continue
+            
+            connected = False
+            current_file_index = 0
+            
+            try:
+                uploader.connect()
+                connected = True
                 
-                try:
-                    uploader.connect()
+                for current_file_index, file_path in enumerate(stable_files):
+                    if not self.running:
+                        for remaining_file in stable_files[current_file_index:]:
+                            file_results[remaining_file] = False
+                        break
                     
-                    if preserve_structure:
-                        for root_path in self.root_paths:
-                            if file_path.startswith(root_path):
-                                relative_path = os.path.relpath(file_path, root_path)
-                                break
-                        else:
-                            relative_path = os.path.basename(file_path)
-                    else:
-                        relative_path = os.path.basename(file_path)
-                    
-                    if isinstance(uploader, SFTPUploader) and uploader.target_path:
-                        remote_path = os.path.join(uploader.target_path, relative_path).replace('\\', '/')
-                    elif isinstance(uploader, SMBUploader) and uploader.target_path:
-                        remote_path = os.path.join(uploader.target_path, relative_path).replace('\\', '/')
-                    else:
-                        remote_path = os.path.join(dir_path, relative_path)
-                    
+                    remote_path = self._build_remote_path(uploader, dir_path, relative_paths[file_path])
                     success = uploader.upload_file(file_path, remote_path)
                     
                     if not success:
                         time.sleep(2)
                         success = uploader.upload_file(file_path, remote_path)
                     
-                    if success:
-                        self.uploaded_records[file_path]['destinations'][str(dest_index)] = {
-                            'protocol': self.upload_destinations[dest_index].get('protocol', ''),
-                            'ip': self.upload_destinations[dest_index].get('host', '') if self.upload_destinations[dest_index].get('protocol') == 'sftp' else self.upload_destinations[dest_index].get('server_ip', ''),
-                            'target_path': remote_path,
-                            'upload_time': time.strftime('%Y-%m-%d %H:%M:%S'),
-                            'status': 'success'
-                        }
-                    else:
-                        self.uploaded_records[file_path]['destinations'][str(dest_index)] = {
-                            'protocol': self.upload_destinations[dest_index].get('protocol', ''),
-                            'ip': self.upload_destinations[dest_index].get('host', '') if self.upload_destinations[dest_index].get('protocol') == 'sftp' else self.upload_destinations[dest_index].get('server_ip', ''),
-                            'target_path': remote_path,
-                            'upload_time': time.strftime('%Y-%m-%d %H:%M:%S'),
-                            'status': 'failed'
-                        }
-                        all_success = False
+                    self._record_upload_result(file_path, dest_index, remote_path, success)
+                    if not success:
+                        file_results[file_path] = False
                     
+                    if file_upload_interval > 0 and current_file_index < len(stable_files) - 1 and self.running:
+                        time.sleep(file_upload_interval)
+            except Exception as e:
+                self.logger.error(f"Upload failed: {e}")
+                for remaining_file in stable_files[current_file_index:]:
+                    remote_path = self._build_remote_path(uploader, dir_path, relative_paths[remaining_file])
+                    self._record_upload_result(remaining_file, dest_index, remote_path, False)
+                    file_results[remaining_file] = False
+            finally:
+                if connected:
                     uploader.disconnect()
-                except Exception as e:
-                    self.logger.error(f"上传失败: {e}")
-                    if uploader:
-                        uploader.disconnect()
-                    all_success = False
+        
+        for file_path in stable_files:
+            file_stat = file_stats[file_path]
             
-            if all_success:
+            if file_results[file_path]:
                 if file_path in self.failed_records:
                     del self.failed_records[file_path]
                 uploaded_files.add(file_path)
@@ -673,6 +677,30 @@ class ServiceInstance:
         self._save_records()
         return uploaded_files
     
+    def _build_remote_path(self, uploader, dir_path: str, relative_path: str) -> str:
+        """
+        Build the remote path for one file on a destination.
+        """
+        if isinstance(uploader, (SFTPUploader, SMBUploader)) and uploader.target_path:
+            return os.path.join(uploader.target_path, relative_path).replace('\\', '/')
+        
+        return os.path.join(dir_path, relative_path).replace('\\', '/')
+    
+    def _record_upload_result(self, file_path: str, dest_index: int, remote_path: str, success: bool):
+        """
+        Record the upload result for one destination.
+        """
+        protocol = self.upload_destinations[dest_index].get('protocol', '')
+        ip = self.upload_destinations[dest_index].get('host', '') if protocol == 'sftp' else self.upload_destinations[dest_index].get('server_ip', '')
+        
+        self.uploaded_records[file_path]['destinations'][str(dest_index)] = {
+            'protocol': protocol,
+            'ip': ip,
+            'target_path': remote_path,
+            'upload_time': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'status': 'success' if success else 'failed'
+        }
+
     def _process_gating(self, dir_path: str, files_info: Dict[str, Dict]):
         """
         处理 Gating
