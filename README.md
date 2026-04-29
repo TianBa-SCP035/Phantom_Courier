@@ -334,6 +334,7 @@ CREATE TABLE `upload_records` (
 - `include_patterns` - 包含的文件名模式（白名单模式，支持正则表达式，支持多个）
 - `exclude_patterns` - 排除的文件名模式（黑名单模式，支持正则表达式，支持多个）
 - `exclude_hidden` - 是否排除隐藏文件（以 . 开头的文件）
+- `include_subfolders_of_matched` - 文件夹命中筛选规则后，其子文件夹是否跳过文件夹筛选并纳入扫描；文件筛选规则仍然生效（默认 false）
 
 **稳定性配置**：
 - `file_check_count` - 文件稳定性检查次数（连续 N 次大小和修改时间不变才算稳定）

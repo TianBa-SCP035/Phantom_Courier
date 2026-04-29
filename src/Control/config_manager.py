@@ -70,7 +70,8 @@ class ConfigManager:
                 "file_mode": "whitelist",
                 "include_patterns": [],
                 "exclude_patterns": [],
-                "exclude_hidden": True
+                "exclude_hidden": True,
+                "include_subfolders_of_matched": False
             },
             "stability": {
                 "file_check_count": 3,

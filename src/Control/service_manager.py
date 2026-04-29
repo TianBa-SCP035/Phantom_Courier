@@ -33,11 +33,28 @@ class ServiceManager:
                 self.service_process = None
                 
         try:
-            output = subprocess.check_output(
-                ['tasklist', '/FI', 'IMAGENAME eq Service.exe', '/NH'],
+            result = subprocess.run(
+                [
+                    "wmic",
+                    "process",
+                    "where",
+                    "name='Service.exe'",
+                    "get",
+                    "ExecutablePath",
+                    "/value"
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
                 creationflags=subprocess.CREATE_NO_WINDOW
-            ).decode('gbk', 'ignore')
-            return 'Service.exe' in output
+            )
+            expected_path = os.path.normcase(os.path.abspath(self.service_exe_path))
+            for line in result.stdout.splitlines():
+                if not line.startswith("ExecutablePath="):
+                    continue
+                running_path = line.split("=", 1)[1].strip()
+                if os.path.normcase(os.path.abspath(running_path)) == expected_path:
+                    return True
         except Exception:
             pass
                 

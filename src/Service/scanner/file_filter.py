@@ -22,6 +22,7 @@ class FileFilter:
         self.include_patterns = filter_config.get('include_patterns', [])
         self.exclude_patterns = filter_config.get('exclude_patterns', [])
         self.exclude_hidden = filter_config.get('exclude_hidden', True)
+        self.include_subfolders_of_matched = filter_config.get('include_subfolders_of_matched', False)
     
     def should_include_folder(self, folder_path: str) -> bool:
         """

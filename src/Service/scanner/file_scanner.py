@@ -47,9 +47,25 @@ class FileScanner:
         for root_path in self.root_paths:
             try:
                 if recursive:
+                    root_abs_path = os.path.abspath(root_path)
+                    matched_folder_roots = []
                     for dirpath, dirnames, filenames in os.walk(root_path):
                         try:
-                            if self._should_scan_dir(dirpath):
+                            abs_dirpath = os.path.abspath(dirpath)
+                            inherited = (
+                                self.file_filter.include_subfolders_of_matched
+                                and self._is_child_of_matched_folder(dirpath, matched_folder_roots)
+                            )
+                            folder_included = inherited or self.file_filter.should_include_folder(dirpath)
+                            if not folder_included:
+                                continue
+                            if (
+                                self.file_filter.include_subfolders_of_matched
+                                and not inherited
+                                and abs_dirpath != root_abs_path
+                            ):
+                                matched_folder_roots.append(abs_dirpath)
+                            if self._should_scan_dir(dirpath, apply_folder_filter=False):
                                 results.append(dirpath)
                         except Exception:
                             continue
@@ -61,7 +77,7 @@ class FileScanner:
         
         return results
     
-    def _should_scan_dir(self, dir_path: str) -> bool:
+    def _should_scan_dir(self, dir_path: str, apply_folder_filter: bool = True) -> bool:
         """
         判断是否应该扫描目录
         
@@ -72,7 +88,7 @@ class FileScanner:
             True: 应该扫描
             False: 不应该扫描
         """
-        if not self.file_filter.should_include_folder(dir_path):
+        if apply_folder_filter and not self.file_filter.should_include_folder(dir_path):
             return False
         
         if self.always_scan_files:
@@ -87,6 +103,21 @@ class FileScanner:
         if record.get('last_dir_mod_time') != dir_mod_time:
             return True
         
+        return False
+    
+    def _is_child_of_matched_folder(self, dir_path: str, matched_folder_roots: List[str]) -> bool:
+        """
+        判断目录是否位于已通过文件夹规则的祖先目录下。
+        """
+        abs_dir_path = os.path.abspath(dir_path)
+        for matched_root in matched_folder_roots:
+            if abs_dir_path == matched_root:
+                continue
+            try:
+                if os.path.commonpath([abs_dir_path, matched_root]) == matched_root:
+                    return True
+            except ValueError:
+                continue
         return False
     
     def _scan_directory(self, dir_path: str, filenames: List[str]) -> Dict[str, Dict]:

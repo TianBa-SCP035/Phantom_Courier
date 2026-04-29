@@ -249,6 +249,7 @@ class ConfigView(ctk.CTkFrame):
         self._incl_patterns_var  = self._labeled_entry(p, "包含的正则（逗号分隔）：", 5)
         self._excl_patterns_var  = self._labeled_entry(p, "排除的正则（逗号分隔）：", 6)
         self._excl_hidden_var    = self._labeled_switch(p, "排除隐藏文件（. 开头）", 7)
+        self._include_subfolders_var = self._labeled_switch(p, "命中文件夹后包含其子文件夹", 8)
 
     def _build_upload_tab(self, p):
         p.grid_columnconfigure(1, weight=1)
@@ -524,6 +525,7 @@ class ConfigView(ctk.CTkFrame):
         self._incl_patterns_var.set(", ".join(fc.get("include_patterns", [])))
         self._excl_patterns_var.set(", ".join(fc.get("exclude_patterns", [])))
         self._excl_hidden_var.set(fc.get("exclude_hidden", True))
+        self._include_subfolders_var.set(fc.get("include_subfolders_of_matched", False))
 
         self._upload_enabled_var.set(uc.get("enabled", True))
         self._preserve_structure_var.set(uc.get("preserve_structure", True))
@@ -577,6 +579,7 @@ class ConfigView(ctk.CTkFrame):
             c["filter"]["include_patterns"] = [x.strip() for x in self._incl_patterns_var.get().split(",") if x.strip()]
             c["filter"]["exclude_patterns"] = [x.strip() for x in self._excl_patterns_var.get().split(",") if x.strip()]
             c["filter"]["exclude_hidden"] = self._excl_hidden_var.get()
+            c["filter"]["include_subfolders_of_matched"] = self._include_subfolders_var.get()
             c["upload"]["enabled"] = self._upload_enabled_var.get()
             c["upload"]["preserve_structure"] = self._preserve_structure_var.get()
             c["upload"]["retry_count"] = int(self._retry_count_var.get())
