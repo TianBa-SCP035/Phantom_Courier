@@ -161,17 +161,21 @@ class DashboardView(ctk.CTkFrame):
             self._btn_ws_install.configure(state="disabled")
             self._btn_ws_remove.configure(state="disabled" if ws else "normal")
 
-        stats = self.app.data_manager.get_stats()
+        stats = self.app.data_manager.get_stats(self.app.record_auto_refresh)
         for k, lbl in self._stat_labels.items():
-            lbl.configure(text=str(stats.get(k, 0)))
+            value = stats.get(k)
+            if value is not None:
+                lbl.configure(text=str(value))
 
     def _tick(self):
-        self._refresh()
-        self.after(2000, self._tick)
+        if getattr(self.app, "_current", None) == "dashboard":
+            self._refresh()
+        self.after(60000, self._tick)
 
     def _show_detail(self, json_file):
         from ui.data_viewer import DataViewer
         data = self.app.data_manager.get_raw_data(json_file)
+        self._refresh()
         DataViewer(self.winfo_toplevel(), json_file, data)
 
     def _set_loading(self, loading: bool):

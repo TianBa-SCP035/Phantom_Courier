@@ -25,7 +25,7 @@ class LogsView(ctk.CTkFrame):
         self._auto_refresh  = True
         self._log_size      = 0
         self._active_sub    = "log"
-        self._data_counter  = 0   # 计数器：30 × 1s = 30s 自动刷新数据记录
+        self._data_counter  = 0   # 计数器：60 × 1s = 60s 自动刷新数据记录
 
         self._build_header()
         self._build_sub_nav()
@@ -88,10 +88,10 @@ class LogsView(ctk.CTkFrame):
     # ── 构建各面板 ────────────────────────────────────
     def _build_panes(self):
         self._pane_log      = self._build_log_pane()
-        self._pane_uploaded = self._build_data_pane()
-        self._pane_failed   = self._build_data_pane()
-        self._pane_dirs     = self._build_data_pane()
-        self._pane_gating   = self._build_data_pane()
+        self._pane_uploaded = self._build_data_pane("uploaded.json")
+        self._pane_failed   = self._build_data_pane("failed.json")
+        self._pane_dirs     = self._build_data_pane("dirs.json")
+        self._pane_gating   = self._build_data_pane("gating_records.json")
         self._panes = {
             "log":      self._pane_log,
             "uploaded": self._pane_uploaded,
@@ -146,7 +146,7 @@ class LogsView(ctk.CTkFrame):
         return frame
 
     # ── 数据记录通用面板（文本渲染，无卡片 widget）────
-    def _build_data_pane(self):
+    def _build_data_pane(self, filename: str):
         frame = ctk.CTkFrame(self, fg_color="transparent")
         frame.grid_columnconfigure(0, weight=1)
         frame.grid_rowconfigure(1, weight=1)
@@ -162,7 +162,8 @@ class LogsView(ctk.CTkFrame):
         
         # 自动刷新开关
         auto_sw = ctk.CTkSwitch(cf, text="自动刷新", variable=ctk.BooleanVar(value=True),
-                                font=app_font(11), text_color=C_TEXT2, progress_color="#89B4EA")
+                                font=app_font(11), text_color=C_TEXT2, progress_color="#89B4EA",
+                                command=lambda f=filename: self.app.record_auto_refresh.__setitem__(f, frame._auto_sw.get()))
         auto_sw.grid(row=0, column=1, sticky="e", padx=(0, 12), pady=8)
         frame._auto_sw = auto_sw
 
@@ -207,7 +208,7 @@ class LogsView(ctk.CTkFrame):
     # ── 数据记录加载（原始 JSON 显示）────────────────
     def _load_data(self, filename: str, pane):
         data = self.app.data_manager.get_raw_data(filename)
-        pane._refresh_lbl.configure(text=f"共 {len(data)} 条记录  ·  每 30 秒自动刷新")
+        pane._refresh_lbl.configure(text=f"共 {len(data)} 条记录  ·  每 60 秒自动刷新")
         tk_t = pane._tb._textbox
         tk_t.configure(state="normal")
         tk_t.delete("1.0", "end")
@@ -218,7 +219,7 @@ class LogsView(ctk.CTkFrame):
     # ── tick：日志实时追踪 + 数据记录 30s 自动刷新 ────
     def _tick(self):
         # ① 日志文件增量追踪（1.5s 间隔，几乎实时）
-        if self._active_sub == "log" and self._auto_follow:
+        if getattr(self.app, "_current", None) == "logs" and self._active_sub == "log" and self._auto_follow:
             path = self._get_log_path()
             if path and os.path.exists(path):
                 try:
@@ -240,9 +241,9 @@ class LogsView(ctk.CTkFrame):
                 except Exception:
                     pass
 
-        # ② 数据记录 30s 自动刷新（读文件不影响 Service 写入，就算最坏情况读到半截 JSON 也只是跳过本次）
+        # ② 数据记录 60s 自动刷新（读文件不影响 Service 写入，就算最坏情况读到半截 JSON 也只是跳过本次）
         self._data_counter += 1
-        if self._data_counter >= 30 and self._active_sub != "log":
+        if self._data_counter >= 60 and getattr(self.app, "_current", None) == "logs" and self._active_sub != "log":
             self._data_counter = 0
             # 检查自动刷新开关
             auto_refresh = self._pane_uploaded._auto_sw.get() if self._active_sub == "uploaded" else \

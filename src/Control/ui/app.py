@@ -44,6 +44,12 @@ class ControlApp(ctk.CTk):
         self.config_manager = ConfigManager()
         self.service_manager = ServiceManager()
         self.data_manager = DataManager()
+        self.record_auto_refresh = {
+            "uploaded.json": True,
+            "failed.json": True,
+            "dirs.json": True,
+            "gating_records.json": True,
+        }
 
         self._nav_btns = {}
         self._current = None
