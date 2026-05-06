@@ -61,7 +61,7 @@ class ConfigManager:
                 "root_paths": [],
                 "interval": 600,
                 "recursive": True,
-                "always_scan_files": True
+                "always_scan_files": False
             },
             "filter": {
                 "folder_mode": "whitelist",
