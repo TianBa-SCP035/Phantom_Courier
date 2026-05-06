@@ -112,10 +112,11 @@ Service 是 Phantom Courier 的核心功能，作为 Windows 服务安装，可�
 - 无论是否需要扫描，都继续遍历其子文件夹（可以考虑砍分支加快扫描速度）
 - 只有通过了筛选条件的文件夹才会被更新到 dirs 记录文件中
 - 如果 `always_scan_files` 为 true，则只要是通过文件夹筛选条件的文件夹（注意黑白名单），无论修改时间是否变化，都会进入文件判别阶段（当文件内部发生修改时，目录时间也不会变化）
+- 如果 `include_subfolders_of_matched` 为 true，命中文件夹筛选规则的非根目录会作为匹配根目录，其所有后代子文件夹会跳过文件夹筛选并纳入扫描；文件筛选规则仍然生效。
 
 ### 文件判别阶段
 ```
-1. 获取文件夹内所有条目名（文件名、子文件夹名），循环拼接完整路径（子文件夹过滤）
+1. 获取当前文件夹内所有条目名，只处理其中的文件；子文件夹是否进入处理由目录遍历阶段决定
    ↓
 2. 应用文件过滤规则（黑白名单正则），剔除不需要的文件，并获取大小和修改时间信息
    ↓
@@ -181,7 +182,7 @@ Service 是 Phantom Courier 的核心功能，作为 Windows 服务安装，可�
 - 支持 SFTP（Linux 服务器）
 - 支持 SMB（Windows 共享文件夹）
 - 两者可以同时启用，支持多个目标地址
-- 保持原文件的目录结构（如 A/123/44/ss.txt → B/123/44/ss.txt）
+- 可选保持原文件的目录结构（如 A/123/44/ss.txt → B/123/44/ss.txt）
 
 ### 数据库记录功能
 ```
@@ -238,7 +239,7 @@ CREATE TABLE `upload_records` (
 ```
 文件上传阶段结束后，对每个文件夹：
   ↓
-1. 如果 Gating 功能已启用且有待上传文件：
+1. 如果 Gating 功能已启用且本目录至少有 1 个文件成功上传：
    - 异步提交 Gating 任务（在独立线程中执行）
    ↓
 2. 在 Gating 线程中：
@@ -348,7 +349,7 @@ CREATE TABLE `upload_records` (
   - `false` - 扁平化保存，直接存文件到指定位置
 - `retry_count` - 上传失败后的重试次数（0 表示不重试）
 - `file_upload_interval` - 同一文件夹内文件上传间隔，单位秒；默认 `0` 表示不等待
-- `upload_on_first_run` - 首次扫描时是否上传已有文件（默认 true）
+- `upload_on_first_run` - 首次扫描时是否上传已有文件（默认 false）
 - `sftp` - SFTP 默认配置（用于填充 destinations 中的空参数）
   - `host` - SFTP 服务器地址
   - `port` - SFTP 服务器端口（默认 22）
@@ -357,7 +358,7 @@ CREATE TABLE `upload_records` (
   - `target_path` - SFTP 目标路径
 - `smb` - SMB 默认配置（用于填充 destinations 中的空参数）
   - `server_ip` - SMB 服务器 IP 地址
-  - `server_port` - SMB 服务器端口（默认 139）
+  - `server_port` - SMB 服务器端口（默认 139；也支持 445，使用 445 时会走 Direct TCP SMB）
   - `username` - SMB 登录用户名
   - `password` - SMB 登录密码
   - `share_name` - SMB 共享名称
@@ -372,11 +373,12 @@ CREATE TABLE `upload_records` (
     - `target_path` - SFTP 目标路径（如果为空，使用 sftp 默认配置）
   - SMB 协议参数：
     - `server_ip` - SMB 服务器 IP 地址（如果为空，使用 smb 默认配置）
-    - `server_port` - SMB 服务器端口（如果为空，使用 smb 默认配置）
+    - `server_port` - SMB 服务器端口（如果为空，使用 smb 默认配置；139 为 NetBIOS SMB，445 为 Direct TCP SMB）
     - `username` - SMB 登录用户名（如果为空，使用 smb 默认配置）
     - `password` - SMB 登录密码（如果为空，使用 smb 默认配置）
     - `share_name` - SMB 共享名称（如果为空，使用 smb 默认配置）
     - `target_path` - SMB 目标路径（如果为空，使用 smb 默认配置）
+    - UNC 路径需要拆分配置，例如 `\\172.16.1.208\f\subdir` 应配置为 `server_ip=172.16.1.208`、`share_name=F`、`target_path=/subdir`，不要把完整 UNC 路径填入 `target_path`。
 
 **Gating 配置**：
 - `enabled` - 是否启用 Gating 调用功能
