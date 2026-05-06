@@ -1,15 +1,15 @@
 [Setup]
-AppName=信使鹅
+AppName=Phantom Courier2
 AppVersion=1.0.0
-AppPublisher=Phantom Courier
-DefaultDirName={userdesktop}\Phantom Courier
-DefaultGroupName=信使鹅
+AppPublisher=Phantom Courier2
+DefaultDirName={userdesktop}\Phantom Courier2
+DefaultGroupName=Phantom Courier2
 OutputDir=output
-OutputBaseFilename=Phantom Courier Setup
+OutputBaseFilename=Phantom Courier2 Setup
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=..\src\Control\Courier.ico
-UninstallDisplayIcon={app}\bin\Phantom Courier.exe
+UninstallDisplayIcon={app}\bin\Phantom Courier2.exe
 PrivilegesRequired=admin
 
 [Files]
@@ -22,7 +22,7 @@ Name: "{app}\logs"
 Name: "{app}\output"
 
 [Icons]
-Name: "{commondesktop}\信使鹅"; Filename: "{app}\bin\Phantom Courier.exe"; IconFilename: "{app}\bin\Phantom Courier.exe"
-Name: "{app}\信使鹅"; Filename: "{app}\bin\Phantom Courier.exe"; IconFilename: "{app}\bin\Phantom Courier.exe"
-Name: "{group}\信使鹅"; Filename: "{app}\bin\Phantom Courier.exe"; IconFilename: "{app}\bin\Phantom Courier.exe"
-Name: "{group}\卸载"; Filename: "{uninstallexe}"
+Name: "{commondesktop}\Phantom Courier2"; Filename: "{app}\bin\Phantom Courier2.exe"; IconFilename: "{app}\bin\Phantom Courier2.exe"
+Name: "{app}\Phantom Courier2"; Filename: "{app}\bin\Phantom Courier2.exe"; IconFilename: "{app}\bin\Phantom Courier2.exe"
+Name: "{group}\Phantom Courier2"; Filename: "{app}\bin\Phantom Courier2.exe"; IconFilename: "{app}\bin\Phantom Courier2.exe"
+Name: "{group}\Uninstall"; Filename: "{uninstallexe}"

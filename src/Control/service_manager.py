@@ -12,7 +12,7 @@ class ServiceManager:
         self.is_frozen = getattr(sys, 'frozen', False)
         self.service_exe_path = self._find_service_exe()
         self.service_process = None
-        self.win_service_name = "PhantomCourier"
+        self.win_service_name = "PhantomCourier2"
         self.project_root = get_project_root()
 
     def _find_service_exe(self) -> str:

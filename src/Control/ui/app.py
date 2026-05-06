@@ -29,7 +29,7 @@ class ControlApp(ctk.CTk):
         ctk.set_appearance_mode("Light")
         ctk.set_default_color_theme("blue")
 
-        self.title("Phantom Courier — 控制面板")
+        self.title("Phantom Courier2 — 控制面板")
         self.geometry("1200x760")
         self.minsize(960, 620)
         self.configure(fg_color=C_BG)
@@ -68,7 +68,7 @@ class ControlApp(ctk.CTk):
         # 品牌区
         brand = ctk.CTkFrame(sb, fg_color="transparent")
         brand.grid(row=0, column=0, pady=(28, 16), padx=20, sticky="ew")
-        ctk.CTkLabel(brand, text="👽 Phantom Courier", font=app_font(16, "bold"),
+        ctk.CTkLabel(brand, text="👽 Phantom Courier2", font=app_font(16, "bold"),
                      text_color="white").pack(anchor="w")
         ctk.CTkLabel(brand, text="文件监控 · 自动传输",
                      font=app_font(11), text_color="#6A9DD4").pack(anchor="w", pady=(3, 0))
@@ -95,7 +95,7 @@ class ControlApp(ctk.CTk):
         # 底部
         ft = ctk.CTkFrame(sb, fg_color="transparent")
         ft.grid(row=5, column=0, sticky="sew", padx=16, pady=14)
-        ctk.CTkLabel(ft, text="© 2026 Phantom Courier",
+        ctk.CTkLabel(ft, text="© 2026 Phantom Courier2",
                      font=app_font(10), text_color="#3A5E8A").pack(anchor="w")
 
     # ── 内容区 ────────────────────────────────────────

@@ -23,8 +23,8 @@ def is_admin():
 
 # Windows 服务包装器，托管 ServiceInstance。
 class ServiceWrapper(win32serviceutil.ServiceFramework):
-    _svc_name_ = "PhantomCourier"
-    _svc_display_name_ = "Phantom Courier"
+    _svc_name_ = "PhantomCourier2"
+    _svc_display_name_ = "Phantom Courier2"
     _svc_description_ = "文件扫描上传服务"
 
     def __init__(self, args):

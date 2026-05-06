@@ -24,6 +24,7 @@ class SMBUploader:
             'client',
             self.server_ip,
             use_ntlm_v2=True,
+            is_direct_tcp=(self.server_port == 445),
         )
         self.smb_client.connect(self.server_ip, self.server_port, timeout=30)
 
